@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр пожарной сигнализации</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101820;color:#eaf0f5;font-family:Arial,sans-serif}
+header{background:#172631;padding:20px;border-bottom:2px solid #314958}
+h1{margin:0;font-size:23px}
+header p{color:#9eb1bd;margin:8px 0 0}
+nav{display:flex;gap:8px;padding:12px;flex-wrap:wrap;background:#14212b}
+nav button,.action{border:1px solid #476071;background:#243947;color:white;padding:11px 15px;border-radius:7px;cursor:pointer}
+nav button.active{background:#087c9e}
+main{max-width:1200px;margin:auto;padding:15px}
+.notice{background:#3a2d17;border:1px solid #80632d;padding:12px;border-radius:8px;color:#ffe2a1;margin-bottom:16px}
+.panel{display:none;background:#182832;border:1px solid #344d5c;border-radius:12px;padding:16px;margin-bottom:18px}
+.panel.active{display:block}
+.panel h2{margin-top:0}
+.device{display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:20px;align-items:start}
+.device img{width:100%;background:white;border-radius:8px;border:5px solid #d5dce0}
+.device-info{color:#b5c6d0;font-size:14px}
+.statusbar{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+.indicator{background:#263b48;border:1px solid #476071;border-radius:7px;padding:9px 12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#53636c;margin-right:7px}
+.dot.green{background:#25c76a;box-shadow:0 0 8px #25c76a}
+.dot.red{background:#ff3434;box-shadow:0 0 8px #ff3434}
+.dot.yellow{background:#ffbd36;box-shadow:0 0 8px #ffbd36}
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:16px}
+.zone{background:#213541;border:1px solid #3c5665;border-radius:8px;padding:12px}
+.zone.fire{border:1px solid #ff3939;background:#452323}
+.zone.fault{border:1px solid #e9ad36;background:#44391f}
+.zone strong{display:block;margin-bottom:9px}
+.zone small{color:#aebfc9}
+.zone button{margin:8px 4px 0 0;padding:8px 10px;border:0;border-radius:5px;cursor:pointer;color:white}
+.firebtn{background:#bd3030}.faultbtn{background:#a87918}.resetbtn{background:#426477}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.toolbar button{padding:10px 13px;border:0;border-radius:6px;cursor:pointer;color:white;background:#34576b}
+.toolbar .danger{background:#a83232}
+#log{background:#0d171e;border:1px solid #344b59;border-radius:8px;padding:12px;max-height:280px;overflow:auto;font-family:monospace;font-size:13px}
+.logline{padding:6px;border-bottom:1px solid #263944}
+footer{text-align:center;color:#8297a4;padding:25px;font-size:12px}
+@media(max-width:700px){.device{grid-template-columns:1fr}.device img{max-width:360px;margin:auto}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>ЦЕНТР УПРАВЛЕНИЯ ПОЖАРНОЙ АВТОМАТИКОЙ</h1>
+<p>Учебный программный тренажёр · Имитация приборов и шлейфов сигнализации</p>
+</header>
+
+<nav>
+<button class="active" onclick="showPanel('vers',this)">ВЭРС-ПК 16</button>
+<button onclick="showPanel('granit',this)">Гранит-6 ЭК</button>
+<button onclick="showPanel('journal',this)">Журнал событий</button>
+</nav>
+
+<main>
+<div class="notice">
+<strong>ВНИМАНИЕ!</strong> Это только программная имитация для обучения.
+Сайт не подключается к реальным приборам, не передаёт команды на оборудование
+и не запускает системы пожаротушения.
+</div>
+
+<section id="vers" class="panel active">
+<h2>ВЭРС-ПК 16</h2>
+<div class="device">
+<img src="https://teko-shop.ru/upload/iblock/adf/v6nq6v7zyes0zv4kwjr4hrtvb2ws7tuh/b521ad45-1830-11e9-bb95-00155d0a1f05_df2f93fa-dd2a-11ea-bed2-00155d0a1f06.jpeg"
+alt="Внешний вид прибора ВЭРС-ПК 16">
+<div class="device-info">
+<p><b>Приёмно-контрольный прибор</b></p>
+<p>Модель: ВЭРС-ПК 16</p>
+<p>Количество имитируемых шлейфов: 16</p>
+<div class="statusbar">
+<div class="indicator"><span id="vers-power" class="dot green"></span>СЕТЬ</div>
+<div class="indicator"><span id="vers-fire" class="dot"></span>ПОЖАР</div>
+<div class="indicator"><span id="vers-fault" class="dot"></span>НЕИСПРАВНОСТЬ</div>
+</div>
+<div class="toolbar">
+<button onclick="allNormal('vers')">Все шлейфы в норму</button>
+<button class="danger" onclick="resetAll('vers')">Сбросить все</button>
+</div>
+</div>
+</div>
+<div id="vers-zones" class="zones"></div>
+</section>
+
+<section id="granit" class="panel">
+<h2>Гранит-6 ЭК</h2>
+<div class="device">
+<img src="https://www.planeta-b.ru/UserFiles/Image/Pkp_op/Signalizaciya_ops/img9925_65389_big.png"
+alt="Внешний вид прибора Гранит-6 ЭК">
+<div class="device-info">
+<p><b>Приёмно-контрольный охранно-пожарный прибор</b></p>
+<p>Модель: Гранит-6 ЭК</p>
+<p>Количество имитируемых зон: 6</p>
+<div class="statusbar">
+<div class="indicator"><span id="granit-power" class="dot green"></span>СЕТЬ</div>
+<div class="indicator"><span id="granit-fire" class="dot"></span>ПОЖАР</div>
+<div class="indicator"><span id="granit-fault" class="dot"></span>НЕИСПРАВНОСТЬ</div>
+</div>
+<div class="toolbar">
+<button onclick="allNormal('granit')">Все зоны в норму</button>
+<button class="danger" onclick="resetAll('granit')">Сбросить все</button>
+</div>
+</div>
+</div>
+<div id="granit-zones" class="zones"></div>
+</section>
+
+<section id="journal" class="panel">
+<h2>Журнал событий</h2>
+<div class="toolbar">
+<button onclick="clearLog()">Очистить журнал</button>
+</div>
+<div id="log">Журнал пуст.</div>
+</section>
+</main>
+
+<footer>
+Учебный тренажёр пожарной автоматики · Не является эксплуатационным программным обеспечением
+</footer>
+
+<script>
+const devices = {
+ vers:{count:16,name:"ВЭРС-ПК 16",zones:[]},
+ granit:{count:6,name:"Гранит-6 ЭК",zones:[]}
+};
+
+function timeNow(){
+ return new Date().toLocaleTimeString("ru-RU");
+}
+
+function logEvent(message){
+ const log=document.getElementById("log");
+ if(log.innerText==="Журнал пуст.") log.innerHTML="";
+ const line=document.createElement("div");
+ line.className="logline";
+ line.textContent="["+timeNow()+"] "+message;
+ log.prepend(line);
+}
+
+function showPanel(id,button){
+ document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
+}
+
+function createZones(id){
+ const device=devices[id];
+ const container=document.getElementById(id+"-zones");
+
+ for(let i=1;i<=device.count;i++){
+  device.zones.push("normal");
+
+  const zone=document.createElement("div");
+  zone.className="zone";
+  zone.id=id+"-zone-"+i;
+
+  zone.innerHTML=`
+   <strong>ШС / Зона № ${i}</strong>
+   <small id="${id}-state-${i}">Состояние: НОРМА</small><br>
+   <button class="firebtn" onclick="setState('${id}',${i},'fire')">ПОЖАР</button>
+   <button class="faultbtn" onclick="setState('${id}',${i},'fault')">НЕИСПР.</button>
+   <button class="resetbtn" onclick="setState('${id}',${i},'normal')">ВОССТ.</button>
+  `;
+  container.appendChild(zone);
+ }
+}
+
+function setState(id,number,state){
+ const device=devices[id];
+ device.zones[number-1]=state;
+
+ const zone=document.getElementById(id+"-zone-"+number);
+ const label=document.getElementById(id+"-state-"+number);
+
+ zone.className="zone";
+ if(state==="fire"){
+  zone.classList.add("fire");
+  label.textContent="Состояние: ПОЖАР";
+  logEvent(device.name+" — ШС "+number+": ПОЖАР");
+ }else if(state==="fault"){
+  zone.classList.add("fault");
+  label.textContent="Состояние: НЕИСПРАВНОСТЬ";
+  logEvent(device.name+" — ШС "+number+": НЕИСПРАВНОСТЬ");
+ }else{
+  label.textContent="Состояние: НОРМА";
+  logEvent(device.name+" — ШС "+number+": восстановлен");
+ }
+ updateIndicators(id);
+}
+
+function updateIndicators(id){
+ const states=devices[id].zones;
+ const fire=states.includes("fire");
+ const fault=states.includes("fault");
+
+ document.getElementById(id+"-fire").className="dot"+(fire?" red":"");
+ document.getElementById(id+"-fault").className="dot"+(fault?" yellow":"");
+}
+
+function allNormal(id){
+ devices[id].zones.forEach((state,index)=>{
+  setState(id,index+1,"normal");
+ });
+ logEvent(devices[id].name+" — все зоны восстановлены");
+}
+
+function resetAll(id){
+ devices[id].zones.forEach((state,index)=>{
+  setState(id,index+1,"normal");
+ });
+ logEvent(devices[id].name+" — выполнен общий учебный сброс");
+}
+
+function clearLog(){
+ document.getElementById("log").innerHTML="Журнал пуст.";
+}
+
+createZones("vers");
+createZones("granit");
+logEvent("Тренажёр запущен");
+</script>
+</body>
+</html>
